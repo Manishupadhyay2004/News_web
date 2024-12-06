@@ -1,4 +1,4 @@
-const API_KEY = "0d89d27710914b619b1c6069a8b6e137";
+const API_KEY = "0d89d27710914b619b1c6069a8b6e137"; // Replace with your free API key
 const url = "https://newsapi.org/v2/everything?q=";
 
 window.addEventListener("load", () => fetchNews("India"));
@@ -8,16 +8,37 @@ function reload() {
 }
 
 async function fetchNews(query) {
-    const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
-    const data = await res.json();
-    bindData(data.articles);
+    try {
+        // Check if the query is cached
+        const cachedNews = localStorage.getItem(query);
+        if (cachedNews) {
+            console.log("Loading from cache");
+            bindData(JSON.parse(cachedNews));
+            return;
+        }
+
+        const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
+        if (!res.ok) {
+            throw new Error(`Error: ${res.status} - ${res.statusText}`);
+        }
+
+        const data = await res.json();
+
+        // Cache the result
+        localStorage.setItem(query, JSON.stringify(data.articles));
+
+        bindData(data.articles);
+    } catch (error) {
+        console.error("Failed to fetch news:", error);
+        alert("Failed to load news. Please try again later.");
+    }
 }
 
 function bindData(articles) {
     const cardsContainer = document.getElementById("cards-container");
     const newsCardTemplate = document.getElementById("template-news-card");
 
-    cardsContainer.innerHTML = "";
+    cardsContainer.innerHTML = ""; // Clear previous results
 
     articles.forEach((article) => {
         if (!article.urlToImage) return;
@@ -61,7 +82,7 @@ const searchButton = document.getElementById("search-button");
 const searchText = document.getElementById("search-text");
 
 searchButton.addEventListener("click", () => {
-    const query = searchText.value;
+    const query = searchText.value.trim();
     if (!query) return;
     fetchNews(query);
     curSelectedNav?.classList.remove("active");
